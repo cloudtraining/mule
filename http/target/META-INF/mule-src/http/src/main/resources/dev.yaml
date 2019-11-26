@@ -1,0 +1,4 @@
+photoService:
+  uri: "jsonplaceholder.typicode.com"
+  albums: "albums"
+  photo: "photos"

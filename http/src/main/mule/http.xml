@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="Photo_Service_HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="aa5d10c9-7577-42a5-a4ba-403850086d10" >
+		<http:request-connection host="${photoService.uri}" >
+		</http:request-connection>
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="51be3240-5916-4489-a942-408cab134fa8" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="efa73404-2b28-42d8-bb88-6f98ea9d3d95" file="${mule.env}.yaml" />
+	<flow name="httpFlow" doc:id="f63a49a1-e73e-47a3-a911-486b2710fc0c" >
+		<http:listener doc:name="Listener" doc:id="5f4631c1-e460-42c9-8429-b3cb19022dc0" config-ref="HTTP_Listener_config" path="/albums"/>
+		<set-variable value="#[attributes.queryParams.id]" doc:name="Set Variable - Save album id" doc:id="75153bc7-dac4-437d-bf2c-f1723995f1c5" variableName="album" />
+		<set-variable value="#['albums/' ++ attributes.queryParams.id]" doc:name="Set Variable" doc:id="61b2fbfa-6bd2-4116-9768-9c9a33dfe229" variableName="albumPath"/>
+		<try doc:name="Try" doc:id="f0d41d72-0949-42b9-9b1a-82c30cbb6654" >
+			<http:request method="GET" doc:name="Request - Get Albums" doc:id="808ed95f-50d2-4e36-af8e-a8e838b49db8" config-ref="Photo_Service_HTTP_Request_configuration" path="#[vars.albumPath]" />
+			<http:request method="GET" doc:name="Request" doc:id="e83ab5ac-458a-4366-8db4-ce73721a090c" config-ref="Photo_Service_HTTP_Request_configuration" path="${photoService.photo}">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"albumId" : vars.album
+}]]]></http:query-params>
+
+		</http:request>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c62b2c29-4cf9-4ea4-8742-c594902515a1" type="HTTP:NOT_FOUND">
+					<set-payload value="Album is not found" doc:name="Set Payload" doc:id="18e7a579-4c04-4e53-b1a7-e7e8f26721aa" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+	</flow>
+</mule>
